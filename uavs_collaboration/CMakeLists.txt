@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  tf
 )
 
 ## System dependencies are found with CMake's conventions
@@ -153,8 +154,19 @@ include_directories(
 # )
 add_executable(flight_node src/flight_node.cpp)
 target_link_libraries(flight_node ${catkin_LIBRARIES})
+
 add_executable(follow_node src/follow_node.cpp)
 target_link_libraries(follow_node ${catkin_LIBRARIES})
+
+add_executable(multi_follow_nodes src/multi_follow_nodes.cpp)
+target_link_libraries(multi_follow_nodes ${catkin_LIBRARIES})
+
+add_executable(multi_formation_nodes src/multi_formation_nodes.cpp)
+target_link_libraries(multi_formation_nodes ${catkin_LIBRARIES})
+
+add_executable(multi_slaves_nodes src/multi_slaves_nodes.cpp)
+target_link_libraries(multi_slaves_nodes ${catkin_LIBRARIES})
+
 
 #############
 ## Install ##

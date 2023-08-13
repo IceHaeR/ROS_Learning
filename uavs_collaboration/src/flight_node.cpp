@@ -4,9 +4,6 @@
 
 
 
-
-
-
 //相关头文件包含
 #include <ros/ros.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -133,8 +130,8 @@ bool FlightController::connectToFC() {
 bool FlightController::takeoff() {
 	//起始位置设置
 	target_pose.pose.position.x = 0;
-    target_pose.pose.position.y = 0;
-    target_pose.pose.position.z = 5;
+    target_pose.pose.position.y = 3;
+    target_pose.pose.position.z = 3;
     //预发布期望位置信息，给无人机目标点
     for(int i = 100; ros::ok() && i > 0; --i){
         local_pos_pub.publish(target_pose);
@@ -170,14 +167,13 @@ bool FlightController::takeoff() {
 				time_flag = ros::Time::now();
 			}
 		}
-				       
+		
 		//判断无人机是否已经起飞至指定位置
 		distance = sqrt(pow(current_pose.pose.position.x - target_pose.pose.position.x, 2) +
 			       pow(current_pose.pose.position.y - target_pose.pose.position.y, 2) +
 			       pow(current_pose.pose.position.z - target_pose.pose.position.z, 2));
 		if(distance < 0.1){
 			ROS_INFO("Takeoff successfully!");
-			ROS_INFO("Switch to straight flight mode.");
 			break;
 		}
 		//循环发布期望位置信息，20Hz频率
@@ -198,6 +194,8 @@ bool FlightController::straight(double flight_time) {
     //获取时间戳
     time_flag = ros::Time::now();
     
+	ROS_INFO("Switch to straight flight mode.");
+    
     while(ros::ok()) {
     	if(ros::Time::now() - time_flag > ros::Duration(flight_time)) {
     		//姿态获取
@@ -206,7 +204,6 @@ bool FlightController::straight(double flight_time) {
 											current_pose.pose.orientation.z,
 											current_pose.pose.orientation.w);
 				start_yaw = yaw;
-				ROS_INFO("Switch to turn mode.");
 				break;
     	}
     	velocity_pub.publish(velocity_cmd);
@@ -220,6 +217,8 @@ bool FlightController::straight(double flight_time) {
 bool FlightController::turn() {
     //获取时间戳
     time_flag = ros::Time::now();
+	ROS_INFO("Switch to turn mode.");
+	
     while(ros::ok()) {
 		//判断无人机转弯时姿态
 		//四元数和旋转矩阵
@@ -228,7 +227,6 @@ bool FlightController::turn() {
 										current_pose.pose.orientation.z,
 										current_pose.pose.orientation.w);
 		if(abs(yaw - start_yaw) >= M_PI / 2){
-			ROS_INFO("Switch to straight mode.");
 			velocity_cmd.twist.angular.z = 0;
 			if(FlightController::straight(30.0)){
 				break;
