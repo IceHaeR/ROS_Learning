@@ -24,7 +24,7 @@ def gazebo_model_state_callback(msg):
 
 if __name__ == '__main__':
     rospy.init_node(vehicle_type+'_get_slave_pose_groundtruth')
-    gazebo_model_state_sub = rospy.Subscriber("/slave/gazebo/model_states", ModelStates, gazebo_model_state_callback,queue_size=1)
+    gazebo_model_state_sub = rospy.Subscriber("/gazebo/model_states", ModelStates, gazebo_model_state_callback,queue_size=1)
     for i in range(vehicle_num):
         multi_pose_pub[i] = rospy.Publisher(vehicle_type+'_'+str(i + 5)+'/mavros/vision_pose/pose', PoseStamped, queue_size=1)
         multi_speed_pub[i] = rospy.Publisher(vehicle_type+'_'+str(i + 5)+'/mavros/vision_speed/speed', Vector3Stamped, queue_size=1)
