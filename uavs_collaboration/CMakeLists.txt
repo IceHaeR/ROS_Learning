@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
-  tf
 )
 
 ## System dependencies are found with CMake's conventions
@@ -167,6 +166,8 @@ target_link_libraries(multi_formation_nodes ${catkin_LIBRARIES})
 add_executable(multi_slaves_nodes src/multi_slaves_nodes.cpp)
 target_link_libraries(multi_slaves_nodes ${catkin_LIBRARIES})
 
+add_executable(multi_tread_nodes src/multi_tread_nodes.cpp)
+target_link_libraries(multi_tread_nodes ${catkin_LIBRARIES})
 
 #############
 ## Install ##

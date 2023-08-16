@@ -46,10 +46,13 @@ private:
 
     std::map<std::string, std::vector<std::vector<double>>> formations; // Predefined formations
 	std::vector<std::vector<double>> current_formation_offsets; // Current formation's position offsets
+    //单架无人机标签
+    bool drone_control_flag; 
+    std::string selected_drone_;
 
 };
 
-MultiFollowerController::MultiFollowerController() : nh("~"), rate(20.0) {
+MultiFollowerController::MultiFollowerController() : nh("~"), rate(20.0),  drone_control_flag(false){
     // Define predefined formations
     formations["line"] = {{4.0, 0.0, 0.0}, {6.0, 0.0, 0.0}, {8.0, 0.0, 0.0}, {2.0, 0.0, 0.0}};
     formations["triangle"] = {{3.0, 0.0, 0.0}, {3.0, 2.0, 0.0}, {3.0, 4.0, 0.0}, {1.5, 2.0, 0.0}};
@@ -83,6 +86,15 @@ void MultiFollowerController::switchFormation(const std::string& formation_name)
 //回调函数
 void MultiFollowerController::state_cb_leader(const mavros_msgs::State::ConstPtr& msg) {
 	current_state_leader = *msg;
+    //选中一架无人机单独操作
+    if (msg->mode == "OFFBOARD" && !drone_control_flag) {
+        drone_control_flag = true;
+
+        //随机挑选一架无人机 iris_1-iris_4
+        int drone_num = 1 + rand() % 4;
+        selected_drone_ = "iris_" + std::to_string(drone_num);
+        ROS_INFO("Selected drone: %s", selected_drone_.c_str());
+    }
 }
 
 void MultiFollowerController::state_cb(const mavros_msgs::State::ConstPtr& msg, int idx) {
@@ -147,15 +159,23 @@ void MultiFollowerController::update_target_positions() {
 	double predicted_z = current_pose_leader.pose.position.z + current_velocity_leader.twist.linear.z * safe_time;
 	
     for(int i = 0; i < 4; i++) {
-    	//结合二维旋转矩阵，使用yaw，使followers与leader保持相对静止
-    	double x_rotated = current_formation_offsets[i][0] * cos(yaw) - current_formation_offsets[i][1] * sin(yaw);
-    	double y_rotated = current_formation_offsets[i][0] * sin(yaw) + current_formation_offsets[i][1] * cos(yaw);
-        //更新目标位置
-        target_pose_followers[i].pose.position.x = predicted_x + x_rotated;
-        target_pose_followers[i].pose.position.y = predicted_y + y_rotated;
-        target_pose_followers[i].pose.position.z = predicted_z + current_formation_offsets[i][2];
+        std::string drone_name = "iris_" + std::to_string(i+1);
+        if(drone_control_flag && drone_name == selected_drone_) {
+            //对选定无人机发送命令
+            target_pose_followers[i].pose.position.x += 0.0001;
+        } else {
+            //结合二维旋转矩阵，使用yaw，使followers与leader保持相对静止
+            double x_rotated = current_formation_offsets[i][0] * cos(yaw) - current_formation_offsets[i][1] * sin(yaw);
+            double y_rotated = current_formation_offsets[i][0] * sin(yaw) + current_formation_offsets[i][1] * cos(yaw);
+            //更新目标位置
+            target_pose_followers[i].pose.position.x = predicted_x + x_rotated;
+            target_pose_followers[i].pose.position.y = predicted_y + y_rotated;
+            target_pose_followers[i].pose.position.z = predicted_z + current_formation_offsets[i][2];
+            
+        }
         target_pose_followers[i].header.stamp = ros::Time::now();
         local_pos_pub_followers[i].publish(target_pose_followers[i]);
+
     }
 }
 
@@ -182,7 +202,7 @@ void MultiFollowerController::run() {
     // Set initial target positions
     for(int i = 0; i < 4; i++) {
         target_pose_followers[i].pose.position.x = 0.0;
-        target_pose_followers[i].pose.position.y = 3.0 + 2*(i+1);
+        target_pose_followers[i].pose.position.y = 3.0 - 2*(i+1);
         target_pose_followers[i].pose.position.z = 3.0;
     }
 
@@ -199,9 +219,9 @@ void MultiFollowerController::run() {
             set_mode_and_arm(i);
         }
         if(current_pose_leader.pose.position.z > 2.0) {
-        	if(current_pose_leader.pose.position.x > 10.0) {
+        	/*if(current_pose_leader.pose.position.x > 10.0) {
         		switchFormation("line");
-        	}
+        	}*/
         	
         	update_target_positions();
         	if (current_state_leader.mode == "AUTO.RTL") {
@@ -225,7 +245,7 @@ int main(int argc, char **argv) {
     MultiFollowerController controller;
 
     // Example: Switching formations during flight
-    controller.switchFormation("triangle");
+    //controller.switchFormation("triangle");
     controller.run();
 
 

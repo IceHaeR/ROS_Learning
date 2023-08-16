@@ -218,7 +218,7 @@ void MultislaveController::run() {
 }
 
 int main(int argc, char **argv) {
-    ros::init(argc, argv, "multi_formation_nodes");
+    ros::init(argc, argv, "multi_slaves_nodes");
     MultislaveController controller;
 
     // Example: Switching formations during flight
